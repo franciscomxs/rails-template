@@ -1,0 +1,41 @@
+name: CI
+env:
+  DATABASE_HOST: localhost
+  DATABASE_USERNAME: postgres
+  DATABASE_PASSWORD: postgres
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: postgres
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: ${{ env.DATABASE_USERNAME }}
+          POSTGRES_PASSWORD: ${{ env.DATABASE_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@477b21f02be01bcb8030d50f37cfec92bfa615b6
+        with:
+          ruby-version: 2.6.7
+      - name: Install dependencies
+        run: bundle install
+      - name: Run tests
+        run: |
+          bundle exec rails db:create db:schema:load db:migrate
+          bundle exec rspec
+      - name: Linter
+        run: bundle exec rubocop .
+      - name: Security
+        run: bundle exec brakeman .
